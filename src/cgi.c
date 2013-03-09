@@ -195,7 +195,7 @@ formvars *cgi_process_form()
  * 
  * 
  */
-formvarsFiles * cgi_param_files()
+formvarsFiles *cgi_param_files()
 {
 	/* FILES */
 	char *separate = (char *)malloc(100*sizeof(char));
@@ -316,7 +316,7 @@ formvarsFiles * cgi_param_files()
 				flag_filename = 0;
 				flag_name = 1;
 				char *t = (char *)malloc(100*sizeof(char));
-				strcpy(t,strstr(buf,"name=")+6);				
+				strcpy(t, strstr(buf, "name=") + 6);				
 				int i;
 				for(i=0;t[i]!='"';i++){}
 				t[i] = '\0';
@@ -668,23 +668,24 @@ char * cgi_files_value(const char *var_name)
 {
 	return slist_value_files(var_name,formvars_start_files);
 }
-
 int cgi_files_store(const char *var_name, const char *directorio)
 {
 	FILE *fin = slist_item_files(var_name,formvars_start_files);
 	if(fin == NULL)
-		return -1;
+		return -2;
 	FILE *fout;
 	
 	char *tmp = (char *)malloc(sizeof(char)*100);
 	strcpy(tmp,directorio);
-	if(tmp[strlen(tmp)-1]!='/')
+	if( tmp[strlen(tmp)-1] != '/' )
 		strcat(tmp,"/\0");
 	
 	strcat(tmp,cgi_files_value(var_name));
 	
 	fout = fopen(tmp, "w");
+	
 	if (fout == NULL) {
+		libcgi_error(E_FATAL, "%s, line %s", __FILE__, __LINE__);
 		return -1;
 	}
 

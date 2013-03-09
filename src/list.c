@@ -168,6 +168,8 @@ char *slist_value_files(const char *name, formvarsFiles *start)
 // Returns the point of files up's by name
 FILE *slist_item_files(const char *name, formvarsFiles *start)
 {
+	if(!start)
+		puts("<br>test</br>");
 	formvarsFiles *begin;
 	begin = start;
 

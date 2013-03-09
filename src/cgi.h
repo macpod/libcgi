@@ -70,8 +70,8 @@ extern char *cgi_param(const char *var_name);
 extern void cgi_send_header(const char *header);
 // FILES
 extern formvarsFiles * cgi_param_files(void);
-extern char *cgi_files_value(const char *var_name);
-extern int cgi_files_store(const char *var_name, const char *filename);
+extern char *cgi_files_filename(const char *var_name);
+extern int cgi_files_save(const char *var_name, const char *filename);
 
 extern char *slist_value_files(const char *name, formvarsFiles *start);
 extern FILE *slist_item_files(const char *name, formvarsFiles *start);

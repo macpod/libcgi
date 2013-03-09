@@ -664,11 +664,11 @@ char *cgi_param(const char *var_name)
  * 
  * 
  */
-char * cgi_files_value(const char *var_name)
+char * cgi_files_filename(const char *var_name)
 {
 	return slist_value_files(var_name,formvars_start_files);
 }
-int cgi_files_store(const char *var_name, const char *directorio)
+int cgi_files_save(const char *var_name, const char *directorio)
 {
 	FILE *fin = slist_item_files(var_name,formvars_start_files);
 	if(fin == NULL)
@@ -680,7 +680,7 @@ int cgi_files_store(const char *var_name, const char *directorio)
 	if( tmp[strlen(tmp)-1] != '/' )
 		strcat(tmp,"/\0");
 	
-	strcat(tmp,cgi_files_value(var_name));
+	strcat(tmp,cgi_files_filename(var_name));
 	
 	fout = fopen(tmp, "w");
 	

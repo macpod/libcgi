@@ -35,10 +35,10 @@ int main(void)
 		puts("Age: Emtpy<br>");
 	
 	// Save and Show Photo
-	if(cgi_files_store("photo","/var/www/") < 0)
+	if(cgi_files_save("photo","/var/www/") < 0)
 		printf("Photo: null<br/>");
 	else
-		printf("Photo: <img src='/%s'></img><br/>", cgi_files_value("photo"));
+		printf("Photo: <img src='/%s'></img><br/>", cgi_files_filename("photo"));
 	
 	// GENDER
 	printf("Gender: %s<br>", cgi_param("gender"));

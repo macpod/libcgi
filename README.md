@@ -28,6 +28,10 @@ Changelog
 __Vesion 1.0__
 _Thanks to James Marjie, Mitch, Tamas Sarlos, Luis Figueiredo, Oliver Schlag and Sverre H. Huseby_
 
+2013/03/09
+
+* Upload of Files
+
 2003/06/03
 
 * Fixed a possible memory problem in htmlentities() function

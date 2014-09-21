@@ -19,7 +19,7 @@
     You can contact the author by e-mail: rafael@insanecorp.com
 */
 #ifndef _CGI_H
-#define _CGI_H	1
+#define _CGI_H    1
 
 #include <stdio.h>
 
@@ -37,6 +37,17 @@ typedef struct formvarsA {
         char *value;
         struct formvarsA *next;
 } formvars;
+/* Upload-Files */
+typedef struct formvarsAFiles {
+        char *name;
+        char *value;
+		FILE *fp;
+        struct formvarsAFiles *next;
+} formvarsFiles;
+/* FILES */
+extern formvarsFiles *formvars_start_files;
+extern formvarsFiles *formvars_last_files;
+/* */
 
 extern formvars *formvars_start;
 extern formvars *formvars_last;
@@ -59,7 +70,14 @@ extern int cgi_init(void);
 extern void cgi_end(void);
 extern char *cgi_param(const char *var_name);
 extern void cgi_send_header(const char *header);
+// FILES
+extern formvarsFiles * cgi_param_files(void);
+extern char *cgi_files_filename(const char *var_name);
+extern int cgi_files_save(const char *var_name, const char *filename);
 
+extern char *slist_value_files(const char *name, formvarsFiles *start);
+extern FILE *slist_item_files(const char *name, formvarsFiles *start);
+//
 // Cookie functions
 extern int cgi_add_cookie(const char *name, const char *value, const char *max_age, const char *path, const char *domain, const int secure);
 extern formvars *cgi_get_cookies(void);

@@ -35,6 +35,9 @@ int headers_initialized = 0;
 
 formvars *formvars_start = NULL;
 formvars *formvars_last = NULL;
+/* FILES */
+formvarsFiles *formvars_start_files = NULL;
+formvarsFiles *formvars_last_files = NULL;
 
 // session.c
 extern formvars *sess_list_start;
@@ -168,22 +171,190 @@ formvars *cgi_process_form()
 			return NULL;
 
 		content_length = atoi(tmp_data);
+		/* FILE */
+		if(strstr(getenv("CONTENT_TYPE"),"multipart/form-data")!=NULL)
+		{
+			if( cgi_param_files() == NULL )
+				return NULL;
+			return formvars_start;
+		}
+		else
+		{
+			post_data = (char *)malloc(content_length + 1);
+			if (post_data == NULL)
+				libcgi_error(E_MEMORY, "%s, line %s", __FILE__, __LINE__);
 
-		post_data = (char *)malloc(content_length + 1);
-		if (post_data == NULL)
-			libcgi_error(E_MEMORY, "%s, line %s", __FILE__, __LINE__);
+			fread(post_data, content_length, 1, stdin);
+			post_data[content_length] = '\0';
 
-		fread(post_data, content_length, 1, stdin);
-		post_data[content_length] = '\0';
-
-		ret = process_data(post_data, &formvars_start, &formvars_last, '=', '&');
-		free(post_data);
-		return ret;
+		    ret = process_data(post_data, &formvars_start, &formvars_last, '=', '&');
+		    free(post_data);
+		    return ret;
+		}
 	}
 
 	return NULL;
 }
-
+/**
+ * FILES
+ * 
+ * 
+ */
+formvarsFiles *cgi_param_files()
+{
+	/* FILES */
+	char *separate = (char *)malloc(100*sizeof(char));
+	strcpy(separate,"--");
+	
+	char buf[BUFSIZ];
+	
+	char *p = strdup(getenv("CONTENT_TYPE"));	
+	
+	p = strstr(p,"=");
+		
+	strcat(separate,++p);	
+	int len = strlen(separate);
+	strcat(separate,"--");	
+	
+	formvarsFiles *file_nodo = NULL;
+	formvars *p_nodo = NULL;			
+	
+	int flag_filename = 0;
+	int flag_name = 0;
+		
+	while(!feof(stdin))
+	{
+		if(!flag_filename)
+		{
+			if(!fgets(buf,BUFSIZ,stdin)) 			
+				return NULL;
+		}
+		else
+		{
+			char c;
+			int i = 0;
+			size_t size = 0;
+			memset(buf,0,BUFSIZ);
+			while(!feof(stdin))
+			{
+				if(fread(&c,sizeof(char),1,stdin)>0){
+					buf[i] = c;
+					i++;
+					if (i >= BUFSIZ) {
+						size += fwrite(buf, sizeof(char), BUFSIZ, formvars_last_files->fp);
+						i = 0;
+					}
+					else if (c == '\012'){
+						buf[i]	= '\0';
+						if (strncmp(buf, separate, len) == 0) {
+							(void)fseek(formvars_last_files->fp, 0L, SEEK_SET);
+							/* remove CRLF in last line */
+							ftruncate(fileno(formvars_last_files->fp), (off_t)(size - 2));
+							break;
+						}
+						size += fwrite(buf, sizeof(char), (size_t)i, formvars_last_files->fp);
+						i = 0;
+					}
+				} 
+			}
+			flag_filename = 0;			
+		}
+		if(!strncmp(buf,separate,len+2))		
+			return formvars_start_files;
+					
+		if(!strncmp(buf,separate,len))
+		{
+			if(!fgets(buf,BUFSIZ,stdin))
+				return NULL;
+			if(strstr(buf,"filename=")!=NULL)
+			{
+				flag_filename = 1;
+				flag_name = 0;						
+				file_nodo = (formvarsFiles*)malloc(sizeof(formvarsFiles));
+				if(!file_nodo)
+				{
+					return NULL;
+				}
+				/* name */
+				char *t1 = (char *)malloc(100*sizeof(char));
+				
+				strcpy(t1,strstr(buf," name=")+7);
+				
+				int i;
+				for(i=0;t1[i]!='"';i++){}
+				t1[i] = '\0';				
+				trim(t1);				
+				file_nodo->name = t1;
+				
+				/* value */
+				char *t2 = (char *)malloc(100*sizeof(char));
+				
+				strcpy(t2,strstr(buf,"filename=")+10);				
+				
+				for(i=0;t2[i]!='"';i++){}
+				t2[i] = '\0';				
+				trim(t2);				
+				file_nodo->value = t2;
+									
+				file_nodo->next = NULL;
+				FILE *ftmp = tmpfile();	
+				file_nodo->fp = ftmp;
+				if(!file_nodo->fp)
+				{						
+					return NULL;
+				}
+				if(formvars_start_files == NULL)
+				{
+					formvars_start_files = file_nodo;
+					formvars_last_files = file_nodo;
+				}
+				else							
+				{
+					formvars_last_files->next = file_nodo;
+					formvars_last_files = file_nodo;
+				}
+				if(!fgets(buf,BUFSIZ,stdin)) return NULL;
+				if(!fgets(buf,BUFSIZ,stdin)) return NULL;							
+			}
+			else if(strstr(buf,"name="))
+			{
+				flag_filename = 0;
+				flag_name = 1;
+				char *t = (char *)malloc(100*sizeof(char));
+				strcpy(t, strstr(buf, "name=") + 6);				
+				int i;
+				for(i=0;t[i]!='"';i++){}
+				t[i] = '\0';
+				trim(t);					
+				p_nodo = (formvars * )malloc(1*sizeof(formvars));
+				p_nodo->name = t;
+				p_nodo->next = NULL;
+				if(!formvars_start)
+				{
+					formvars_start = p_nodo;
+					formvars_last = p_nodo;
+				}
+				else
+				{
+					formvars_last->next = p_nodo;
+					formvars_last = p_nodo;
+				}
+				if(!fgets(buf,BUFSIZ,stdin)) 
+					return NULL;
+			}
+		}
+		else
+		{
+			if(flag_name)
+			{
+				formvars_last->value = strdup(buf);
+				trim(formvars_last->value);
+			}
+		}
+	}
+	return formvars_start_files;
+}
+ 
 /**
 * Kills the application with a message.
 * Writes msg and terminate
@@ -491,7 +662,51 @@ char *cgi_param(const char *var_name)
 {
 	return slist_item(var_name, formvars_start);
 }
+/**
+ * FILES
+ * 
+ * 
+ * 
+ * 
+ */
+char * cgi_files_filename(const char *var_name)
+{
+	return slist_value_files(var_name,formvars_start_files);
+}
+int cgi_files_save(const char *var_name, const char *directorio)
+{
+	FILE *fin = slist_item_files(var_name,formvars_start_files);
+	if(fin == NULL)
+		return -2;
+	FILE *fout;
+	
+	char *tmp = (char *)malloc(sizeof(char)*100);
+	strcpy(tmp,directorio);
+	if( tmp[strlen(tmp)-1] != '/' )
+		strcat(tmp,"/\0");
+	
+	strcat(tmp,cgi_files_filename(var_name));
+	
+	fout = fopen(tmp, "w");
+	
+	if (fout == NULL) {
+		libcgi_error(E_FATAL, "%s, line %s", __FILE__, __LINE__);
+		return -1;
+	}
 
+	while (!feof(fin)) {
+		size_t	len;
+		char	buf[BUFSIZ];
+
+		len = fread(buf, sizeof(char), sizeof(buf), fin);
+		fwrite(buf, sizeof(char), len, fout);
+	}
+	fclose(fout);
+	
+	(void)fseek(fin, 0L, SEEK_SET);	
+	return 1;
+}
+/** END FILES **/
 /**
 * Sends a specific header.
 * Sends a specific HTTP header. You won't need to add '\\n\\n' chars.

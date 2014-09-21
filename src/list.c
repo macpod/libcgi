@@ -149,6 +149,39 @@ int slist_delete(char *name, formvars **start, formvars **last)
 
 	return 0;
 }
+/* FILES */
+char *slist_value_files(const char *name, formvarsFiles *start)
+{
+	formvarsFiles *begin;
+	begin = start;
+
+	while (begin) {
+		if (!strcasecmp(begin->name, name))
+			return (!begin->value[0] ? NULL : begin->value);
+
+		begin = begin->next;
+	}
+	
+	return NULL;
+}
+/* FILES */
+// Returns the point of files up's by name
+FILE *slist_item_files(const char *name, formvarsFiles *start)
+{
+	if(!start)
+		puts("<br>test</br>");
+	formvarsFiles *begin;
+	begin = start;
+
+	while (begin) {
+		if (!strcasecmp(begin->name, name))
+			return (!begin->fp ? NULL : begin->fp);
+
+		begin = begin->next;
+	}
+	
+	return NULL;
+}
 
 // Returns the value of the item pointed by name
 char *slist_item(const char *name, formvars *start)

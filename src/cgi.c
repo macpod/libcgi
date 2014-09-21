@@ -673,22 +673,44 @@ char * cgi_files_filename(const char *var_name)
 {
 	return slist_value_files(var_name,formvars_start_files);
 }
-int cgi_files_save(const char *var_name, const char *directorio)
+
+/*
+Saves a file. This needs to be rewritten.
+The data is saved to the specified file name. If the file name ends with a /
+it is assumed to be a directory and the uploaded file's name is used.
+*/
+int cgi_files_save(const char *var_name, const char *filename)
 {
 	FILE *fin = slist_item_files(var_name,formvars_start_files);
-	if(fin == NULL)
-		return -2;
 	FILE *fout;
+	char *tmp = NULL;
+    int len;
+
+	if(fin == NULL || filename == NULL || 
+        cgi_files_filename(var_name) == NULL)
+		return -2;	
+
+    len = strlen(filename);
+    if (filename < 1) {
+        return -3;
+    }
 	
-	char *tmp = (char *)malloc(sizeof(char)*100);
-	strcpy(tmp,directorio);
-	if( tmp[strlen(tmp)-1] != '/' )
-		strcat(tmp,"/\0");
+	if (filename[len-1] == '/') { // This is a directory
+    	tmp = malloc(len+sizeof(cgi_files_filename(var_name))+1);
+    	if (!tmp) {
+			libcgi_error(E_MEMORY, "%s, line %s", __FILE__, __LINE__);
+	    }	    
+
+    	strcpy(tmp,filename);
+    	strcat(tmp,cgi_files_filename(var_name));
+        fout = fopen(tmp, "w");
+        free(tmp);
+
+	} else { // This should be a file/
+    	fout = fopen(filename, "w");	
+	}
 	
-	strcat(tmp,cgi_files_filename(var_name));
-	
-	fout = fopen(tmp, "w");
-	
+
 	if (fout == NULL) {
 		libcgi_error(E_FATAL, "%s, line %s", __FILE__, __LINE__);
 		return -1;
